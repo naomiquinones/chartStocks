@@ -28,6 +28,7 @@ lerna-debug.log*
 # Test coverage
 coverage/
 .nyc_output/
+server/test-*.js
 
 # Editor and operating-system files
 .vscode/*
