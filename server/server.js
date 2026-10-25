@@ -5,6 +5,7 @@ import { fetchDailyPrices } from "./callmarketstack.js";
 import { savePrices, isRecent, getPrices } from "./prices.js";
 
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 8080;
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
@@ -44,6 +45,31 @@ app.get("/api/stocks/:symbol/prices", async (req, res) => {
 
   await refreshIfStale(symbol);
   res.json(await getPrices(symbol));
+});
+
+app.post('/api/stocks', async (req, res) => {
+  const symbol = String(req.body?.symbol ?? '').trim().toUpperCase();
+
+  if (!/^[A-Z]{1,5}$/.test(symbol)) {
+    return res.status(400).json({ error: 'Enter a symbol of 1 to 5 letters' });
+  }
+
+  const { rows } = await pool.query('SELECT symbol FROM stocks');
+  if (rows.some((row) => row.symbol === symbol)) {
+    return res.status(409).json({ error: `${symbol} is already on the list` });
+  }
+  if (rows.length >= 10) {
+    return res.status(400).json({ error: 'The list is full (10 stocks)' });
+  }
+
+  await refreshIfStale(symbol);
+  const prices = await getPrices(symbol);
+  if (prices.length === 0) {
+    return res.status(404).json({ error: `No price data found for ${symbol}` });
+  }
+
+  await pool.query('INSERT INTO stocks (symbol) VALUES ($1)', [symbol]);
+  res.status(201).json({ symbol });
 });
 
 app.listen(PORT, () => console.log(`Server on ${PORT}`));
