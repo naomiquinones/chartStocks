@@ -14,6 +14,7 @@ export async function fetchDailyPrices(symbol) {
 
   return body.data.map((row) => ({
     date: row.date.slice(0, 10),
-    close: row.close,
-  }));
+    close: row.close ?? row.adj_close,
+  }))
+    .filter(row => row.close !== null && row.close !== undefined);
 }
