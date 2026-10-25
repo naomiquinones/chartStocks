@@ -47,19 +47,21 @@ app.get("/api/stocks/:symbol/prices", async (req, res) => {
   res.json(await getPrices(symbol));
 });
 
-app.post('/api/stocks', async (req, res) => {
-  const symbol = String(req.body?.symbol ?? '').trim().toUpperCase();
+app.post("/api/stocks", async (req, res) => {
+  const symbol = String(req.body?.symbol ?? "")
+    .trim()
+    .toUpperCase();
 
   if (!/^[A-Z]{1,5}$/.test(symbol)) {
-    return res.status(400).json({ error: 'Enter a symbol of 1 to 5 letters' });
+    return res.status(400).json({ error: "Enter a symbol of 1 to 5 letters" });
   }
 
-  const { rows } = await pool.query('SELECT symbol FROM stocks');
+  const { rows } = await pool.query("SELECT symbol FROM stocks");
   if (rows.some((row) => row.symbol === symbol)) {
     return res.status(409).json({ error: `${symbol} is already on the list` });
   }
   if (rows.length >= 10) {
-    return res.status(400).json({ error: 'The list is full (10 stocks)' });
+    return res.status(400).json({ error: "The list is full (10 stocks)" });
   }
 
   await refreshIfStale(symbol);
@@ -68,8 +70,14 @@ app.post('/api/stocks', async (req, res) => {
     return res.status(404).json({ error: `No price data found for ${symbol}` });
   }
 
-  await pool.query('INSERT INTO stocks (symbol) VALUES ($1)', [symbol]);
+  await pool.query("INSERT INTO stocks (symbol) VALUES ($1)", [symbol]);
   res.status(201).json({ symbol });
+});
+
+app.delete("/api/stocks/:symbol", async (req, res) => {
+  const symbol = req.params.symbol.toUpperCase();
+  await pool.query("DELETE FROM stocks WHERE symbol = $1", [symbol]);
+  res.status(204).end();
 });
 
 app.listen(PORT, () => console.log(`Server on ${PORT}`));
