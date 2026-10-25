@@ -9,9 +9,11 @@ import {
   reserveMarketstackCall,
 } from "./prices.js";
 import { WebSocketServer } from "ws";
+import path from "node:path";
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(import.meta.dirname, '../client/dist')));
 const PORT = process.env.PORT || 8080;
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
