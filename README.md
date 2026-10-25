@@ -4,7 +4,7 @@ A full-stack app that charts recent daily closing prices for a shared list of st
 
 Built for freeCodeCamp's [Chart the Stock Market](https://www.freecodecamp.org/learn/coding-interview-prep/take-home-projects/chart-the-stock-market) project.
 
-**Live demo:** _add your Render URL here_
+**Live demo:** [https://chartstocks.onrender.com/](https://chartstocks.onrender.com/)
 
 ## Features
 
@@ -16,7 +16,7 @@ Built for freeCodeCamp's [Chart the Stock Market](https://www.freecodecamp.org/l
 ## Tech stack
 
 | Part | Tools |
-|---|---|
+| --- | --- |
 | Frontend | React, Vite, Recharts |
 | Backend | Node.js, Express 5, `ws` |
 | Database | PostgreSQL on Neon, `pg` |
@@ -25,7 +25,7 @@ Built for freeCodeCamp's [Chart the Stock Market](https://www.freecodecamp.org/l
 
 ## How it works
 
-```
+```txt
 Browser (React)              Express server                  Outside services
 ───────────────              ──────────────                  ────────────────
 chart, add/remove   ─HTTP─▶  /api/stocks             ─SQL──▶  Neon Postgres
@@ -53,29 +53,35 @@ Marketstack's free plan allows 100 requests per month, so the server:
 **You'll need:** Node.js 22.12 or newer, a free [Neon](https://neon.com) database, and a free [Marketstack](https://marketstack.com) API key.
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    npm install --prefix server
    npm install --prefix client
    ```
+
 2. **Create the tables:** in Neon's SQL Editor, run the contents of `server/schema.sql`.
 3. **Add environment variables:** copy `server/.env.example` to `server/.env` and fill in your values:
-   ```
+
+   ```sh
    DATABASE_URL=postgresql://USER:PASSWORD@HOST/neondb?sslmode=verify-full
    MARKETSTACK_API_KEY=your-marketstack-key
    ```
+
 4. **Start both servers:**
+
    ```bash
    npm run dev
    ```
-   Open http://localhost:5173. Vite serves the React app and proxies `/api` and `/ws` to Express on port 8080.
+
+   Open [http://localhost:5173](http://localhost:5173). Vite serves the React app and proxies `/api` and `/ws` to Express on port 8080.
 
 ## Scripts
 
 Run from the project root:
 
 | Command | What it does |
-|---|---|
+| --- | --- |
 | `npm run dev` | Starts Vite (5173) and Express (8080) together |
 | `npm run build` | Installs server and client dependencies, then builds React into `client/dist` |
 | `npm start` | Starts Express, which serves the built app, the API, and the WebSocket on one port |
@@ -83,7 +89,7 @@ Run from the project root:
 ## API
 
 | Method | Route | Description |
-|---|---|---|
+| --- | --- | --- |
 | `GET` | `/api/stocks` | The shared list of symbols |
 | `POST` | `/api/stocks` | Add a symbol. Body: `{ "symbol": "TSLA" }` |
 | `DELETE` | `/api/stocks/:symbol` | Remove a symbol |
