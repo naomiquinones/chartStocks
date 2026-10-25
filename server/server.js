@@ -18,6 +18,10 @@ const inProgress = new Map();
 app.get('/api/stocks/:symbol/prices', async (req, res) => {
   const symbol = req.params.symbol.toUpperCase();
 
+  const { rowCount } = await pool.query('SELECT 1 FROM stocks WHERE symbol = $1', [symbol]);
+  if (rowCount === 0) {
+    return res.status(404).json({ error: `${symbol} is not on the list` });
+  }
   if (!(await isRecent(symbol))) {
     if (!inProgress.has(symbol)) {
       console.log(`Fetching prices for ${symbol} from Marketstack...`);
