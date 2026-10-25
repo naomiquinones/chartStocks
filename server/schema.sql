@@ -13,3 +13,7 @@ CREATE TABLE price_cache_status (
   symbol          TEXT        PRIMARY KEY,
   last_checked_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE marketstack_calls (
+  called_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

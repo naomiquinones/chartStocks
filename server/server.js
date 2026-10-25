@@ -2,7 +2,12 @@ import "dotenv/config";
 import express from "express";
 import pool from "./db.js";
 import { fetchDailyPrices } from "./callmarketstack.js";
-import { savePrices, isRecent, getPrices } from "./prices.js";
+import {
+  savePrices,
+  isRecent,
+  getPrices,
+  reserveMarketstackCall,
+} from "./prices.js";
 import { WebSocketServer } from "ws";
 
 const app = express();
@@ -22,12 +27,17 @@ async function refreshIfStale(symbol) {
   if (await isRecent(symbol)) return;
 
   if (!inProgress.has(symbol)) {
-    console.log(`Fetching prices for ${symbol} from Marketstack...`);
     inProgress.set(
       symbol,
-      fetchDailyPrices(symbol)
-        .then((rows) => savePrices(symbol, rows))
-        .finally(() => inProgress.delete(symbol)),
+      (async () => {
+        if (!(await reserveMarketstackCall())) {
+          console.log(`Marketstack budget reached; skipping ${symbol}`);
+          return;
+        }
+        console.log(`Fetching prices for ${symbol} from Marketstack...`);
+        const rows = await fetchDailyPrices(symbol);
+        await savePrices(symbol, rows);
+      })().finally(() => inProgress.delete(symbol)),
     );
   }
   await inProgress.get(symbol);
@@ -68,7 +78,9 @@ app.post("/api/stocks", async (req, res) => {
   await refreshIfStale(symbol);
   const prices = await getPrices(symbol);
   if (prices.length === 0) {
-    return res.status(404).json({ error: `No price data found for ${symbol}` });
+    return res.status(404).json({
+      error: `Couldn't get prices for ${symbol}. Check the symbol, or try again tomorrow.`,
+    });
   }
 
   await pool.query("INSERT INTO stocks (symbol) VALUES ($1)", [symbol]);
@@ -84,10 +96,10 @@ app.delete("/api/stocks/:symbol", async (req, res) => {
 });
 
 const server = app.listen(PORT, () => console.log(`Server on ${PORT}`));
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ server, path: "/ws" });
 
 function broadcastChange() {
   for (const client of wss.clients) {
-    if (client.readyState === client.OPEN) client.send('changed');
+    if (client.readyState === client.OPEN) client.send("changed");
   }
 }

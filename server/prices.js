@@ -22,7 +22,7 @@ export async function isRecent(symbol) {
   const { rows } = await pool.query(
     `SELECT 1 FROM price_cache_status
      WHERE symbol = $1 AND last_checked_at > NOW() - INTERVAL '7 days'`,
-    [symbol]
+    [symbol],
   );
   return rows.length > 0;
 }
@@ -33,7 +33,20 @@ export async function getPrices(symbol) {
      FROM prices
      WHERE symbol = $1
      ORDER BY trading_date`,
-    [symbol]
+    [symbol],
   );
   return rows;
+}
+
+export async function reserveMarketstackCall() {
+  const { rows } = await pool.query(
+    `SELECT
+       COUNT(*) FILTER (WHERE called_at > NOW() - INTERVAL '1 day')::int AS today,
+       COUNT(*) FILTER (WHERE called_at >= date_trunc('month', NOW()))::int AS month
+     FROM marketstack_calls`,
+  );
+  if (rows[0].today >= 10 || rows[0].month >= 75) return false;
+
+  await pool.query("INSERT INTO marketstack_calls DEFAULT VALUES");
+  return true;
 }
