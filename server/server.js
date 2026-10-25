@@ -3,6 +3,7 @@ import express from "express";
 import pool from "./db.js";
 import { fetchDailyPrices } from "./callmarketstack.js";
 import { savePrices, isRecent, getPrices } from "./prices.js";
+import { WebSocketServer } from "ws";
 
 const app = express();
 app.use(express.json());
@@ -71,13 +72,22 @@ app.post("/api/stocks", async (req, res) => {
   }
 
   await pool.query("INSERT INTO stocks (symbol) VALUES ($1)", [symbol]);
+  broadcastChange();
   res.status(201).json({ symbol });
 });
 
 app.delete("/api/stocks/:symbol", async (req, res) => {
   const symbol = req.params.symbol.toUpperCase();
   await pool.query("DELETE FROM stocks WHERE symbol = $1", [symbol]);
+  broadcastChange();
   res.status(204).end();
 });
 
-app.listen(PORT, () => console.log(`Server on ${PORT}`));
+const server = app.listen(PORT, () => console.log(`Server on ${PORT}`));
+const wss = new WebSocketServer({ server, path: '/ws' });
+
+function broadcastChange() {
+  for (const client of wss.clients) {
+    if (client.readyState === client.OPEN) client.send('changed');
+  }
+}

@@ -58,6 +58,29 @@ function App() {
     });
   }, [version]);
 
+    useEffect(() => {
+    let socket;
+    let retryTimer;
+    let stopped = false;
+
+    function connect() {
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+      socket = new WebSocket(`${protocol}://${location.host}/ws`);
+      socket.onopen = () => setVersion((v) => v + 1);
+      socket.onmessage = () => setVersion((v) => v + 1);
+      socket.onclose = () => {
+        if (!stopped) retryTimer = setTimeout(connect, 2000);
+      };
+    }
+
+    connect();
+    return () => {
+      stopped = true;
+      clearTimeout(retryTimer);
+      socket.close();
+    };
+  }, []);
+
   async function handleAdd(event) {
     event.preventDefault();
     setError("");
