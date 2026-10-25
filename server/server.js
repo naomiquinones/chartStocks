@@ -14,14 +14,18 @@ app.get('/api/stocks', async (req, res) => {
   res.json(rows);
 });
 
+const inProgress = new Map();
 app.get('/api/stocks/:symbol/prices', async (req, res) => {
   const symbol = req.params.symbol.toUpperCase();
 
   if (!(await isRecent(symbol))) {
-    console.log(`Fetching prices for ${symbol} from Marketstack...`);
-
-    const rows = await fetchDailyPrices(symbol);
-    await savePrices(symbol, rows);
+    if (!inProgress.has(symbol)) {
+      console.log(`Fetching prices for ${symbol} from Marketstack...`);
+      inProgress.set(symbol, fetchDailyPrices(symbol)
+        .then((rows) => savePrices(symbol, rows))
+        .finally(() => inProgress.delete(symbol)));
+    }
+    await inProgress.get(symbol);
   }
 
   const prices = await getPrices(symbol);
