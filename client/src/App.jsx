@@ -23,17 +23,56 @@ async function loadChart() {
 function App() {
   const [symbols, setSymbols] = useState([]);
   const [data, setData] = useState([]);
+  const [version, setVersion] = useState(0);
+  const [input, setInput] = useState('');
+  const [error, setError] = useState('');
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     loadChart().then((result) => {
       setSymbols(result.symbols);
       setData(result.data);
     });
-  }, []);
+  }, [version]);
+
+  async function handleAdd(event) {
+    event.preventDefault();
+    setError('');
+    setAdding(true);
+
+    const res = await fetch('/api/stocks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol: input }),
+    });
+
+    setAdding(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error || 'Something went wrong. Please try again.');
+      return;
+    }
+
+    setInput('');
+    setVersion((v) => v + 1);
+  }
 
   return (
     <main>
       <h1>Chart the Stock Market</h1>
+
+      <form onSubmit={handleAdd}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Stock symbol, e.g. TSLA"
+          aria-label="Stock symbol"
+        />
+        <button type="submit" disabled={adding}>
+          {adding ? 'Adding…' : 'Add'}
+        </button>
+      </form>
+      {error && <p role="alert">{error}</p>}
 
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={data}>
